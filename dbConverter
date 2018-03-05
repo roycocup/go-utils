@@ -1,0 +1,58 @@
+package main
+
+import (
+	"os"
+	"fmt"
+	"io/ioutil"
+	"regexp"
+	"log"
+	"path/filepath"
+	"strings"
+)
+
+func main(){
+	args := os.Args
+
+	if len(args) < 2 {
+		fmt.Print(strings.Repeat("\n",2))
+		fmt.Println("Usage: ./dbConverter path/to/database.sql")
+		fmt.Print(strings.Repeat("\n",2))
+		os.Exit(-1)
+	}
+
+	var databaseName string
+	databaseName = args[1]
+
+	content, err := ioutil.ReadFile(databaseName);
+	if err != nil {
+		panic(err)
+	}
+
+
+	//old := `(X'[^,\)]*')`
+	//newstr := `CONVERT($1 using utf8mb4)`
+
+	var re = regexp.MustCompile(`(X'[^,\)]*')`)
+	fixed := re.ReplaceAllString(string(content), `CONVERT($1 using utf8mb4)`)
+
+	newName := filepath.Dir(databaseName) + "/"+ filepath.Base(databaseName) +"-fixed-db.sql"
+
+	err = ioutil.WriteFile(newName, []byte(fixed), 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	output(len(fixed))
+	output(newName)
+	die()
+}
+
+
+
+func output(o interface{}){
+	fmt.Printf("%#v", o)
+}
+
+func die(){
+	os.Exit(0)
+}
